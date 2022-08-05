@@ -7,7 +7,7 @@ use solana_sdk::signer::keypair::Keypair;
 use std::env;
 
 #[derive(Parser)]
-#[clap(author, version, about, long_about = None)] // Read from `Cargo.toml`
+#[clap(author, version, about, long_about = None)] // Reads these fields from `Cargo.toml`
 struct Cli {
     #[clap(subcommand)]
     command: Commands,
