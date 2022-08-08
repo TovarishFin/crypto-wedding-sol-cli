@@ -1,6 +1,6 @@
 use crate::network;
 use anchor_client::Program;
-use solana_sdk::{pubkey::Pubkey, signer::keypair::Keypair};
+use solana_sdk::{pubkey::Pubkey, signature::Signature, signer::keypair::Keypair};
 
 pub const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
 
@@ -30,4 +30,15 @@ pub fn find_partner_pda(partner: &Pubkey) -> Pubkey {
     );
 
     pda
+}
+
+pub fn get_tx_link(sig: &Signature, cluster: Option<&str>) -> String {
+    match cluster {
+        None => {
+            format!("https://explorer.solana.com/tx/{}", sig)
+        }
+        Some(network) => {
+            format!("https://explorer.solana.com/tx/{}?cluster={}", sig, network)
+        }
+    }
 }

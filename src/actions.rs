@@ -129,3 +129,212 @@ pub fn close_partner(user: &Keypair, other: &Pubkey) -> Result<Signature, Client
 
     Ok(sig)
 }
+
+pub fn update_partner(
+    user: &Keypair,
+    other: &Pubkey,
+    name: &str,
+    vows: &str,
+) -> Result<Signature, ClientError> {
+    let user_pub = user.pubkey();
+    let p_partner = util::find_partner_pda(&user_pub);
+    let p_wedding = util::find_wedding_pda(&user_pub, other);
+
+    let prog = util::get_crypto_wedding(Some(user));
+    let sig = prog
+        .request()
+        .accounts(crypto_wedding::accounts::UpdatePartner {
+            user: user.pubkey(),
+            other: other.clone(),
+            partner: p_partner,
+            wedding: p_wedding,
+            system_program: system_program::id(),
+        })
+        .args(crypto_wedding::instruction::UpdatePartner {
+            name: name.to_string(),
+            vows: vows.to_string(),
+        })
+        .signer(user)
+        .send()?;
+
+    let rpc_client = RpcClient::new(network::RPC_URL);
+    let latest = rpc_client.get_latest_blockhash()?;
+    rpc_client.confirm_transaction_with_spinner(&sig, &latest, CommitmentConfig::confirmed())?;
+
+    Ok(sig)
+}
+
+pub fn update_name(user: &Keypair, other: &Pubkey, name: &str) -> Result<Signature, ClientError> {
+    let user_pub = user.pubkey();
+    let p_partner = util::find_partner_pda(&user_pub);
+    let p_wedding = util::find_wedding_pda(&user_pub, other);
+
+    let prog = util::get_crypto_wedding(Some(user));
+    let sig = prog
+        .request()
+        .accounts(crypto_wedding::accounts::UpdateName {
+            user: user.pubkey(),
+            other: other.clone(),
+            partner: p_partner,
+            wedding: p_wedding,
+            system_program: system_program::id(),
+        })
+        .args(crypto_wedding::instruction::UpdateName {
+            name: name.to_string(),
+        })
+        .signer(user)
+        .send()?;
+
+    let rpc_client = RpcClient::new(network::RPC_URL);
+    let latest = rpc_client.get_latest_blockhash()?;
+    rpc_client.confirm_transaction_with_spinner(&sig, &latest, CommitmentConfig::confirmed())?;
+
+    Ok(sig)
+}
+
+pub fn update_vows(user: &Keypair, other: &Pubkey, vows: &str) -> Result<Signature, ClientError> {
+    let user_pub = user.pubkey();
+    let p_partner = util::find_partner_pda(&user_pub);
+    let p_wedding = util::find_wedding_pda(&user_pub, other);
+
+    let prog = util::get_crypto_wedding(Some(user));
+    let sig = prog
+        .request()
+        .accounts(crypto_wedding::accounts::UpdateVows {
+            user: user.pubkey(),
+            other: other.clone(),
+            partner: p_partner,
+            wedding: p_wedding,
+            system_program: system_program::id(),
+        })
+        .args(crypto_wedding::instruction::UpdateVows {
+            vows: vows.to_string(),
+        })
+        .signer(user)
+        .send()?;
+
+    let rpc_client = RpcClient::new(network::RPC_URL);
+    let latest = rpc_client.get_latest_blockhash()?;
+    rpc_client.confirm_transaction_with_spinner(&sig, &latest, CommitmentConfig::confirmed())?;
+
+    Ok(sig)
+}
+
+pub fn give_answer(user: &Keypair, other: &Pubkey, answer: bool) -> Result<Signature, ClientError> {
+    let user_pub = user.pubkey();
+    let p_partner = util::find_partner_pda(&user_pub);
+    let p_other_partner = util::find_partner_pda(other);
+    let p_wedding = util::find_wedding_pda(&user_pub, other);
+
+    let prog = util::get_crypto_wedding(Some(user));
+    let sig = prog
+        .request()
+        .accounts(crypto_wedding::accounts::GiveAnswer {
+            user: user.pubkey(),
+            other: other.clone(),
+            partner: p_partner,
+            other_partner: p_other_partner,
+            wedding: p_wedding,
+            system_program: system_program::id(),
+        })
+        .args(crypto_wedding::instruction::GiveAnswer { answer })
+        .signer(user)
+        .send()?;
+
+    let rpc_client = RpcClient::new(network::RPC_URL);
+    let latest = rpc_client.get_latest_blockhash()?;
+    rpc_client.confirm_transaction_with_spinner(&sig, &latest, CommitmentConfig::confirmed())?;
+
+    Ok(sig)
+}
+
+pub fn divorce(user: &Keypair, other: &Pubkey) -> Result<Signature, ClientError> {
+    let user_pub = user.pubkey();
+    let p_partner = util::find_partner_pda(&user_pub);
+    let p_other_partner = util::find_partner_pda(other);
+    let p_wedding = util::find_wedding_pda(&user_pub, other);
+
+    let prog = util::get_crypto_wedding(None);
+    let state: crypto_wedding::state::Wedding = prog.account(p_wedding)?;
+
+    let prog = util::get_crypto_wedding(Some(user));
+    let sig = prog
+        .request()
+        .accounts(crypto_wedding::accounts::Divorce {
+            creator: state.creator,
+            user: user.pubkey(),
+            other: other.clone(),
+            partner: p_partner,
+            other_partner: p_other_partner,
+            wedding: p_wedding,
+            system_program: system_program::id(),
+        })
+        .args(crypto_wedding::instruction::Divorce {})
+        .signer(user)
+        .send()?;
+
+    let rpc_client = RpcClient::new(network::RPC_URL);
+    let latest = rpc_client.get_latest_blockhash()?;
+    rpc_client.confirm_transaction_with_spinner(&sig, &latest, CommitmentConfig::confirmed())?;
+
+    Ok(sig)
+}
+
+pub fn get_wedding_state(
+    user: &Pubkey,
+    other: &Pubkey,
+) -> Result<crypto_wedding::state::Wedding, ClientError> {
+    let p_wedding = util::find_wedding_pda(user, other);
+    let prog = util::get_crypto_wedding(None);
+    let state: crypto_wedding::state::Wedding = prog.account(p_wedding)?;
+
+    Ok(state)
+}
+
+pub fn get_partner_state(partner: &Pubkey) -> Result<crypto_wedding::state::Partner, ClientError> {
+    let p_partner = util::find_partner_pda(partner);
+    let prog = util::get_crypto_wedding(None);
+    let state: crypto_wedding::state::Partner = prog.account(p_partner)?;
+    Ok(state)
+}
+
+pub fn watch_wedding(_user: &Pubkey, _other: &Pubkey) -> Result<(), ClientError> {
+    todo!()
+}
+
+pub fn print_wedding(user: &Pubkey, other: &Pubkey) {
+    match get_wedding_state(user, other) {
+        Ok(wedding) => {
+            println!("---| wedding state |---");
+            println!("creator: {:?}", wedding.creator);
+            println!("partner0: {:?}", wedding.partner0);
+            println!("partner1: {:?}", wedding.partner1);
+            println!("status: {:?}", wedding.status);
+            println!("-----------------------");
+        }
+        Err(err) => {
+            println!("---| wedding state |---");
+            println!("error getting state: {:?}", err);
+            println!("-----------------------");
+        }
+    }
+}
+
+pub fn print_partner(partner: &Pubkey) {
+    match get_partner_state(partner) {
+        Ok(partner) => {
+            println!("---| partner state |---");
+            println!("wedding: {:?}", partner.wedding);
+            println!("user: {:?}", partner.user);
+            println!("name: {:?}", partner.name);
+            println!("vows: {:?}", partner.vows);
+            println!("answer: {:?}", partner.answer);
+            println!("-----------------------");
+        }
+        Err(err) => {
+            println!("---| partner state |---");
+            println!("error getting partner state: {:?}", err);
+            println!("-----------------------");
+        }
+    }
+}
