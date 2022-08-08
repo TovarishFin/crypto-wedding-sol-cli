@@ -1,11 +1,15 @@
 # crypto_wedding_cli
 
 This is a command line interface (CLI) to interact with the crypto wedding program on Solana.
+The CLI was built using [clap](https://github.com/clap-rs/clap).
 
 ## Installation
 
 - clone this repo
 - `cargo install --path .`
+- call using `crypto_wedding_cli` from your terminal
+
+The repo can also be used without installing by calling `cargo run -- <cli-command-here>`.
 
 ## Usage
 
