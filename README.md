@@ -39,7 +39,3 @@ SUBCOMMANDS:
     update-vows
     watch-wedding
 ```
-
-## TODOs
-
-- put env file in home dir or something not dependent on repo location

@@ -132,7 +132,12 @@ struct WatchWedding {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    dotenv::dotenv()?;
+    let path = format!(
+        "{}/.crypto_wedding_cli_env",
+        dirs::home_dir().unwrap().to_str().unwrap()
+    );
+
+    dotenv::from_path(path)?;
     let signer = Keypair::from_base58_string(env::var("SIGNER_PRIV")?.as_ref());
     println!("operating as: {:?}", signer.pubkey());
 
