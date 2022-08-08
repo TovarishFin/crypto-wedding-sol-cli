@@ -281,10 +281,10 @@ pub fn divorce(user: &Keypair, other: &Pubkey) -> Result<Signature, ClientError>
 }
 
 pub fn get_wedding_state(
-    user: &Pubkey,
-    other: &Pubkey,
+    partner0: &Pubkey,
+    partner1: &Pubkey,
 ) -> Result<crypto_wedding::state::Wedding, ClientError> {
-    let p_wedding = util::find_wedding_pda(user, other);
+    let p_wedding = util::find_wedding_pda(partner0, partner1);
     let prog = util::get_crypto_wedding(None);
     let state: crypto_wedding::state::Wedding = prog.account(p_wedding)?;
 
@@ -296,10 +296,6 @@ pub fn get_partner_state(partner: &Pubkey) -> Result<crypto_wedding::state::Part
     let prog = util::get_crypto_wedding(None);
     let state: crypto_wedding::state::Partner = prog.account(p_partner)?;
     Ok(state)
-}
-
-pub fn watch_wedding(_user: &Pubkey, _other: &Pubkey) -> Result<(), ClientError> {
-    todo!()
 }
 
 pub fn print_wedding(user: &Pubkey, other: &Pubkey) {
@@ -336,5 +332,170 @@ pub fn print_partner(partner: &Pubkey) {
             println!("error getting partner state: {:?}", err);
             println!("-----------------------");
         }
+    }
+}
+
+pub fn watch_wedding(partner0: &Pubkey, partner1: &Pubkey) -> Result<(), ClientError> {
+    // wedding storage fields
+    let mut last_creator = None;
+    let mut last_partner0 = None;
+    let mut last_partner1 = None;
+    let mut last_status = None;
+
+    // partner0 storage fields
+    let mut last_wedding0 = None;
+    let mut last_user0 = None;
+    let mut last_name0 = None;
+    let mut last_vows0 = None;
+    let mut last_answer0 = None;
+
+    // partner1 storage fields
+    let mut last_wedding1 = None;
+    let mut last_user1 = None;
+    let mut last_name1 = None;
+    let mut last_vows1 = None;
+    let mut last_answer1 = None;
+
+    println!("watching wedding and related partner accounts...");
+    println!("new state will be printed when updated...");
+
+    // poll for new state every 1000 ms and print if anything is different
+    loop {
+        match get_wedding_state(partner0, partner1) {
+            Ok(crypto_wedding::state::Wedding {
+                creator,
+                partner0: p_partner0,
+                partner1: p_partner1,
+                status,
+            }) => {
+                let current_creator = Some(creator);
+                let current_partner0 = Some(p_partner0);
+                let current_partner1 = Some(p_partner1);
+                let current_status = Some(status);
+
+                if last_creator != current_creator
+                    || last_partner0 != current_partner0
+                    || last_partner1 != current_partner1
+                    || last_status != current_status
+                {
+                    print_wedding(&partner0, &partner1);
+                }
+
+                last_creator = current_creator;
+                last_partner0 = current_partner0;
+                last_partner1 = current_partner1;
+                last_status = current_status;
+            }
+            Err(_) => {
+                if last_creator != None
+                    || last_partner0 != None
+                    || last_partner1 != None
+                    || last_status != None
+                {
+                    println!("wedding account no longer exists...");
+                }
+
+                last_creator = None;
+                last_partner0 = None;
+                last_partner1 = None;
+                last_status = None;
+            }
+        };
+
+        match get_partner_state(partner0) {
+            Ok(crypto_wedding::state::Partner {
+                wedding,
+                user,
+                name,
+                vows,
+                answer,
+            }) => {
+                let current_wedding0 = Some(wedding);
+                let current_user0 = Some(user);
+                let current_name0 = Some(name);
+                let current_vows0 = Some(vows);
+                let current_answer0 = Some(answer);
+
+                if last_wedding0 != current_wedding0
+                    || last_user0 != current_user0
+                    || last_name0 != current_name0
+                    || last_vows0 != current_vows0
+                    || last_answer0 != current_answer0
+                {
+                    print_partner(&user)
+                }
+
+                last_wedding0 = current_wedding0;
+                last_user0 = current_user0;
+                last_name0 = current_name0;
+                last_vows0 = current_vows0;
+                last_answer0 = current_answer0;
+            }
+            Err(_) => {
+                if last_wedding0 != None
+                    || last_user0 != None
+                    || last_name0 != None
+                    || last_vows0 != None
+                    || last_answer0 != None
+                {
+                    println!("partner0 account no longer exists...");
+                }
+
+                last_wedding0 = None;
+                last_user0 = None;
+                last_name0 = None;
+                last_vows0 = None;
+                last_answer0 = None;
+            }
+        };
+
+        match get_partner_state(partner1) {
+            Ok(crypto_wedding::state::Partner {
+                wedding,
+                user,
+                name,
+                vows,
+                answer,
+            }) => {
+                let current_wedding1 = Some(wedding);
+                let current_user1 = Some(user);
+                let current_name1 = Some(name);
+                let current_vows1 = Some(vows);
+                let current_answer1 = Some(answer);
+
+                if last_wedding1 != current_wedding1
+                    || last_user1 != current_user1
+                    || last_name1 != current_name1
+                    || last_vows1 != current_vows1
+                    || last_answer1 != current_answer1
+                {
+                    print_partner(&user)
+                }
+
+                last_wedding1 = current_wedding1;
+                last_user1 = current_user1;
+                last_name1 = current_name1;
+                last_vows1 = current_vows1;
+                last_answer1 = current_answer1;
+            }
+            Err(_) => {
+                if last_wedding1 != None
+                    || last_user1 != None
+                    || last_name1 != None
+                    || last_vows1 != None
+                    || last_answer1 != None
+                {
+                    println!("partner1 account no longer exists...");
+                }
+
+                last_wedding1 = None;
+                last_user1 = None;
+                last_name1 = None;
+                last_vows1 = None;
+                last_answer1 = None;
+            }
+        };
+
+        std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 }
